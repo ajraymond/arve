@@ -12,6 +12,8 @@ static int imem_nb = 0;
 // GET_BITS(0x0420, 4, 8) == 0x42
 #define GET_BITS(val, start, stop) (((val) >> (start)) & ((1u << ((stop) - (start) + 1)) - 1))
 
+#define SEXT32(val, from_nb_bits) ((int32_t) (GET_BITS(val, (from_nb_bits) - 1, (from_nb_bits) - 1) ? (val | (0xFFFFFFFFu ^ ((1u << (from_nb_bits)) - 1))) : (val)))
+
 #define PARSE_R \
     uint32_t __attribute__((__unused__)) rd = GET_BITS(ins, 7, 11); \
     uint32_t __attribute__((__unused__)) func3 = GET_BITS(ins, 12, 14); \
@@ -64,44 +66,44 @@ enum {
     REGISTERS_NB,
 };
 
-static uint64_t R[REGISTERS_NB] = {0};
+static uint32_t R[REGISTERS_NB] = {0};
 
 
 void dump_registers(void)
 {
     fprintf(stderr,
-            "x0=%.16lx "
-            "x1=%.16lx "
-            "x2=%.16lx "
-            "x3=%.16lx "
-            "x4=%.16lx "
-            "x5=%.16lx "
-            "x6=%.16lx "
-            "x7=%.16lx "
-            "x8=%.16lx "
-            "x9=%.16lx "
-            "x10=%.16lx "
-            "x11=%.16lx "
-            "x12=%.16lx "
-            "x13=%.16lx "
-            "x14=%.16lx "
-            "x15=%.16lx "
-            "x16=%.16lx "
-            "x17=%.16lx "
-            "x18=%.16lx "
-            "x19=%.16lx "
-            "x20=%.16lx "
-            "x21=%.16lx "
-            "x22=%.16lx "
-            "x23=%.16lx "
-            "x24=%.16lx "
-            "x25=%.16lx "
-            "x26=%.16lx "
-            "x27=%.16lx "
-            "x28=%.16lx "
-            "x29=%.16lx "
-            "x30=%.16lx "
-            "x31=%.16lx\n",
+            "x0=%.8x "
+            "x1=%.8x "
+            "x2=%.8x "
+            "x3=%.8x "
+            "x4=%.8x "
+            "x5=%.8x "
+            "x6=%.8x "
+            "x7=%.8x "
+            "x8=%.8x "
+            "x9=%.8x "
+            "x10=%.8x "
+            "x11=%.8x "
+            "x12=%.8x "
+            "x13=%.8x "
+            "x14=%.8x "
+            "x15=%.8x "
+            "x16=%.8x "
+            "x17=%.8x "
+            "x18=%.8x "
+            "x19=%.8x "
+            "x20=%.8x "
+            "x21=%.8x "
+            "x22=%.8x "
+            "x23=%.8x "
+            "x24=%.8x "
+            "x25=%.8x "
+            "x26=%.8x "
+            "x27=%.8x "
+            "x28=%.8x "
+            "x29=%.8x "
+            "x30=%.8x "
+            "x31=%.8x\n",
             R[X0], R[X1], R[X2], R[X3], R[X4], R[X5], R[X6], R[X7], R[X8], R[X9],
             R[X10], R[X11], R[X12], R[X13], R[X14], R[X15], R[X16], R[X17], R[X18], R[X19],
             R[X20], R[X21], R[X22], R[X23], R[X24], R[X25], R[X26], R[X27], R[X28], R[X29],
@@ -131,17 +133,20 @@ void run_prog(void) {
         else if (opcode == 0b0010011) {
             PARSE_I;
 
-            // Sign extend
-            uint32_t immu;
-            if (GET_BITS(imm, 11, 11) == 1) {
-                immu = 0xFFFFF000u | imm;
-            } else {
-                immu = imm;
-            }
-            int32_t imm32 = *((int32_t*) &immu);
+            if (func3 == 0b000) {
+                // ADDI
+                int32_t imm32 = SEXT32(imm, 12);
 
-            printf("x%u = x%u + %d\n", rd, rs1, imm32);
-            R[rd] = R[rs1] + imm32;
+                printf("x%u = x%u + %d\n", rd, rs1, imm32);
+                R[rd] = R[rs1] + imm32;
+            }
+            else if (func3 == 0b111) {
+                // ANDI
+                int32_t imm32 = SEXT32(imm, 12);
+
+                printf("x%u = x%u & %d\n", rd, rs1, imm32);
+                R[rd] = R[rs1] & imm32;
+            }
         }
         else {
             printf("[???]\n");
