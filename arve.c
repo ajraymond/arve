@@ -26,16 +26,100 @@ static int imem_nb = 0;
     uint32_t __attribute__((__unused__)) imm = GET_BITS(ins, 20, 31)
 
 
-void dump_prog(void) {
+enum {
+    X0,
+    X1,
+    X2,
+    X3,
+    X4,
+    X5,
+    X6,
+    X7,
+    X8,
+    X9,
+    X10,
+    X11,
+    X12,
+    X13,
+    X14,
+    X15,
+    X16,
+    X17,
+    X18,
+    X19,
+    X20,
+    X21,
+    X22,
+    X23,
+    X24,
+    X25,
+    X26,
+    X27,
+    X28,
+    X29,
+    X30,
+    X31,
+    PC,
+    //
+    REGISTERS_NB,
+};
+
+static uint64_t R[REGISTERS_NB] = {0};
+
+
+void dump_registers(void)
+{
+    fprintf(stderr,
+            "x0=%.16lx "
+            "x1=%.16lx "
+            "x2=%.16lx "
+            "x3=%.16lx "
+            "x4=%.16lx "
+            "x5=%.16lx "
+            "x6=%.16lx "
+            "x7=%.16lx "
+            "x8=%.16lx "
+            "x9=%.16lx "
+            "x10=%.16lx "
+            "x11=%.16lx "
+            "x12=%.16lx "
+            "x13=%.16lx "
+            "x14=%.16lx "
+            "x15=%.16lx "
+            "x16=%.16lx "
+            "x17=%.16lx "
+            "x18=%.16lx "
+            "x19=%.16lx "
+            "x20=%.16lx "
+            "x21=%.16lx "
+            "x22=%.16lx "
+            "x23=%.16lx "
+            "x24=%.16lx "
+            "x25=%.16lx "
+            "x26=%.16lx "
+            "x27=%.16lx "
+            "x28=%.16lx "
+            "x29=%.16lx "
+            "x30=%.16lx "
+            "x31=%.16lx\n",
+            R[X0], R[X1], R[X2], R[X3], R[X4], R[X5], R[X6], R[X7], R[X8], R[X9],
+            R[X10], R[X11], R[X12], R[X13], R[X14], R[X15], R[X16], R[X17], R[X18], R[X19],
+            R[X20], R[X21], R[X22], R[X23], R[X24], R[X25], R[X26], R[X27], R[X28], R[X29],
+            R[X30], R[X31]);
+}
+
+void run_prog(void) {
     for(int i=0; i<imem_nb; i++) {
         uint32_t ins = imem[i];
         printf("%.8x: %.8x ", i*4, ins);
 
+        dump_registers();
         uint32_t opcode = ins & GET_BITS(ins, 0, 6);
         if (opcode == 0b0110011) {
             PARSE_R;
 
-            printf("r%u = r%u + r%d\n", rd, rs1, rs2);
+            printf("x%u = x%u + x%d\n", rd, rs1, rs2);
+            R[rd] = R[rs1] + R[rs2];
         }
         else if (opcode == 0b0010011) {
             PARSE_I;
@@ -49,11 +133,17 @@ void dump_prog(void) {
             }
             int32_t imm32 = *((int32_t*) &immu);
 
-            printf("r%u = r%u + %d\n", rd, rs1, imm32);
+            printf("x%u = x%u + %d\n", rd, rs1, imm32);
+            R[rd] = R[rs1] + imm32;
         }
         else {
             printf("[???]\n");
         }
+
+        // Special zero register
+        R[X0] = 0;
+
+        dump_registers();
     }
 }
 
@@ -109,7 +199,7 @@ int main(int argc, char *argv[])
     printf("Program name: %s\n", prog_file);
 
     read_prog(prog_file);
-    dump_prog();
+    run_prog();
 
     return 0;
 }
