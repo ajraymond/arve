@@ -118,8 +118,15 @@ void run_prog(void) {
         if (opcode == 0b0110011) {
             PARSE_R;
 
-            printf("x%u = x%u + x%d\n", rd, rs1, rs2);
-            R[rd] = R[rs1] + R[rs2];
+            if (func3 == 0b000) {
+                // ADD
+                printf("x%u = x%u + x%d\n", rd, rs1, rs2);
+                R[rd] = R[rs1] + R[rs2];
+            } else {
+                // AND
+                printf("and x%u, x%u, x%u\n", rd, rs1, rs2);
+                R[rd] = R[rs1] & R[rs2];
+            }
         }
         else if (opcode == 0b0010011) {
             PARSE_I;

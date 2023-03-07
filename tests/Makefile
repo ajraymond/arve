@@ -1,5 +1,5 @@
 .PHONY: all
-all: test_add.bin test_addi.bin
+all: $(patsubst %.s,%.bin,$(wildcard *.s))
 
 #.PRECIOUS: %.elf %.o
 
