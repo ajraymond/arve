@@ -12,27 +12,44 @@ static int imem_nb = 0;
 // GET_BITS(0x0420, 4, 8) == 0x42
 #define GET_BITS(val, start, stop) (((val) >> (start)) & ((1u << ((stop) - (start) + 1)) - 1))
 
+#define PARSE_R \
+    uint32_t __attribute__((__unused__)) rd = GET_BITS(ins, 7, 11); \
+    uint32_t __attribute__((__unused__)) func3 = GET_BITS(ins, 12, 14); \
+    uint32_t __attribute__((__unused__)) rs1 = GET_BITS(ins, 15, 19); \
+    uint32_t __attribute__((__unused__)) rs2 = GET_BITS(ins, 20, 24); \
+    uint32_t __attribute__((__unused__)) func7 = GET_BITS(ins, 25, 31)
+
+#define PARSE_I \
+    uint32_t __attribute__((__unused__)) rd = GET_BITS(ins, 7, 11); \
+    uint32_t __attribute__((__unused__)) func3 = GET_BITS(ins, 12, 14); \
+    uint32_t __attribute__((__unused__)) rs1 = GET_BITS(ins, 15, 19); \
+    uint32_t __attribute__((__unused__)) imm = GET_BITS(ins, 20, 31)
+
+
 void dump_prog(void) {
     for(int i=0; i<imem_nb; i++) {
         uint32_t ins = imem[i];
         printf("%.8x: %.8x ", i*4, ins);
 
-        uint32_t itype = ins & 0x7F;
-        printf("T=%.2x ", itype);
-        if (itype == 0b0010011) {
-            uint32_t rd = GET_BITS(ins, 7, 11);
-            uint32_t rs1 = GET_BITS(ins, 15, 19);
-            uint32_t immu12 = GET_BITS(ins, 20, 31);
+        uint32_t opcode = ins & GET_BITS(ins, 0, 6);
+        if (opcode == 0b0110011) {
+            PARSE_R;
 
+            printf("r%u = r%u + r%d\n", rd, rs1, rs2);
+        }
+        else if (opcode == 0b0010011) {
+            PARSE_I;
+
+            // Sign extend
             uint32_t immu;
-            if (GET_BITS(immu12, 11, 11) == 1) {
-                immu = 0xFFFFF000u | immu12;
+            if (GET_BITS(imm, 11, 11) == 1) {
+                immu = 0xFFFFF000u | imm;
             } else {
-                immu = immu12;
+                immu = imm;
             }
-            int32_t imm = *((int32_t*) &immu);
+            int32_t imm32 = *((int32_t*) &immu);
 
-            printf("[ADDI] r%u <- r%u + %d\n", rd, rs1, imm);
+            printf("r%u = r%u + %d\n", rd, rs1, imm32);
         }
         else {
             printf("[???]\n");

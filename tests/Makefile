@@ -1,5 +1,5 @@
 .PHONY: all
-all: test1.bin
+all: test_add.bin test_addi.bin
 
 #.PRECIOUS: %.elf %.o
 
